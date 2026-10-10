@@ -1,0 +1,177 @@
+# ==============================================================================
+# Incident Severity & Escalation Decision Engine - Rules Configuration
+# ==============================================================================
+# This configuration file defines the scoring weights, threshold brackets,
+# severity classifications, and escalation operating procedures.
+# Decoupling these rules from Python code enables non-technical policy updates
+# and full auditability during security incident evaluations.
+# ==============================================================================
+
+version: "1.0.0"
+title: "Incident Severity & Escalation Matrix"
+description: "Academic cyber incident scoring and escalation rules specification"
+
+# ------------------------------------------------------------------------------
+# 1. Business Impact Scoring
+# Evaluates the potential or observed interruption to business continuity.
+# ------------------------------------------------------------------------------
+business_impact:
+  Low:
+    points: 1
+    description: "Minimal interruption to non-essential services; business functions normal"
+  Medium:
+    points: 2
+    description: "Moderate impact on secondary workflows; workarounds readily available"
+  High:
+    points: 3
+    description: "Severe degradation or outage of core operational / client-facing services"
+  Critical:
+    points: 4
+    description: "Catastrophic failure of essential enterprise infrastructure or mission-critical systems"
+
+# ------------------------------------------------------------------------------
+# 2. Affected Assets Scoring
+# Evaluates the operational blast radius based on host count or endpoints involved.
+# ------------------------------------------------------------------------------
+affected_assets_brackets:
+  - min: 1
+    max: 2
+    points: 0
+    bracket_label: "1–2 assets"
+    description: "Isolated blast radius confined to 1 or 2 endpoints or workstations"
+  - min: 3
+    max: 10
+    points: 1
+    bracket_label: "3–10 assets"
+    description: "Contained departmental or subnet blast radius (3 to 10 endpoints)"
+  - min: 11
+    max: 25
+    points: 2
+    bracket_label: "11–25 assets"
+    description: "Broad multi-system impact spanning multiple network zones (11 to 25 endpoints)"
+  - min: 26
+    max: null
+    points: 3
+    bracket_label: "26+ assets"
+    description: "Enterprise-wide compromise or mass asset infestation (26 or more endpoints)"
+
+# ------------------------------------------------------------------------------
+# 3. Confidence Level Scoring
+# Evaluates analyst/telemetry detection fidelity (percentage between 0 and 100).
+# ------------------------------------------------------------------------------
+confidence_brackets:
+  - min: 0
+    max: 49.99
+    points: 0
+    bracket_label: "Below 50%"
+    description: "Low-fidelity or uncorroborated alert; possible false positive or noisy signal"
+  - min: 50.0
+    max: 74.99
+    points: 1
+    bracket_label: "50–74%"
+    description: "Moderate confidence backed by preliminary correlation or single sensor detection"
+  - min: 75.0
+    max: 89.99
+    points: 2
+    bracket_label: "75–89%"
+    description: "High confidence substantiated by multiple cross-correlated security indicators"
+  - min: 90.0
+    max: 100.0
+    points: 3
+    bracket_label: "90–100%"
+    description: "Definitive confirmation backed by concrete telemetry, forensic evidence, or analyst verification"
+
+# ------------------------------------------------------------------------------
+# 4. Persistence Scoring
+# Evaluates whether the threat maintains persistent execution surviving reboots.
+# ------------------------------------------------------------------------------
+persistence:
+  false:
+    points: 0
+    label: "No"
+    description: "No persistent foothold detected; execution is ephemeral or in-memory only"
+  true:
+    points: 2
+    label: "Yes"
+    description: "Persistence mechanism detected (e.g. registry keys, cron jobs, scheduled tasks, startup services)"
+
+# ------------------------------------------------------------------------------
+# 5. Data Exposure Scoring
+# Evaluates if sensitive, PII, intellectual property, or regulatory data is compromised.
+# ------------------------------------------------------------------------------
+data_exposure:
+  false:
+    points: 0
+    label: "No"
+    description: "No sensitive or confidential data accessed, staged, or exfiltrated"
+  true:
+    points: 3
+    label: "Yes"
+    description: "Confirmed or highly probable compromise, exposure, or exfiltration of sensitive organizational data"
+
+# ------------------------------------------------------------------------------
+# 6. Severity Thresholds
+# Maps composite calculated scores (1 to 15) to severity levels.
+# ------------------------------------------------------------------------------
+severity_thresholds:
+  - severity: "LOW"
+    min_score: 0
+    max_score: 2
+    color: "#28a745"   # Green
+    badge_variant: "success"
+    summary: "Routine event with negligible enterprise consequence"
+  - severity: "MEDIUM"
+    min_score: 3
+    max_score: 5
+    color: "#ffc107"   # Yellow / Amber
+    badge_variant: "warning"
+    summary: "Moderate threat needing structured review before containment becomes critical"
+  - severity: "HIGH"
+    min_score: 6
+    max_score: 8
+    color: "#fd7e14"   # Orange
+    badge_variant: "danger"
+    summary: "Severe security incident with significant operational compromise"
+  - severity: "CRITICAL"
+    min_score: 9
+    max_score: null
+    color: "#dc3545"   # Red
+    badge_variant: "dark-danger"
+    summary: "Crisis-level cyber incident demanding immediate enterprise response"
+
+# ------------------------------------------------------------------------------
+# 7. Escalation Mapping & Standard Operating Procedures (SOP)
+# Maps each severity tier directly to required human escalation workflows.
+# ------------------------------------------------------------------------------
+escalation_procedures:
+  LOW:
+    level: "Normal Monitoring"
+    sla_response_time: "Within 24 hours"
+    action_directive: "Log event in SIEM, retain telemetry, and continue routine automated baseline monitoring without paging on-call staff."
+    notified_roles:
+      - "Automated SIEM Logger"
+      - "Tier-1 SOC Shift Queue"
+  MEDIUM:
+    level: "Security Analyst Review"
+    sla_response_time: "Within 4 hours"
+    action_directive: "Assign ticket to Tier-1 / Tier-2 Security Operations Analyst for artifact triage, host isolation evaluation, and corroboration."
+    notified_roles:
+      - "Tier-1 / Tier-2 Security Analyst"
+      - "Asset Owner"
+  HIGH:
+    level: "Incident Response Team"
+    sla_response_time: "Within 1 hour"
+    action_directive: "Mobilize the Cyber Security Incident Response Team (CSIRT). Enact network segment containment and initiate deep forensic triage."
+    notified_roles:
+      - "CSIRT Lead"
+      - "Senior Threat Hunter"
+      - "IT Infrastructure Manager"
+  CRITICAL:
+    level: "Immediate Escalation"
+    sla_response_time: "Immediate (< 15 minutes)"
+    action_directive: "Declare Major Incident. Page on-call CISO, initiate executive crisis bridge, invoke business continuity plan, and prepare regulatory/legal disclosures."
+    notified_roles:
+      - "Chief Information Security Officer (CISO)"
+      - "Incident Commander"
+      - "Legal & Compliance Counsel"
+      - "Executive Crisis Management Team"
